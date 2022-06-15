@@ -1,0 +1,13 @@
+html, body, div.root {
+    background-color: black;
+    color: white;
+    height: 100%;
+}
+
+textarea.console {
+    font-family: 'Courier New', Courier, monospace;
+    width: 100%;
+    background-color: transparent;
+    color: white;
+    height: calc(100% - 50px);
+}
