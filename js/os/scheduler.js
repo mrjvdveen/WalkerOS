@@ -5,17 +5,17 @@ class Scheduler {
     }
 
     boot() {
-        window.setInterval(this.runInstruction.bind(this), 50);
+        window.setTimeout(this.runInstruction.bind(this), 0);
     }
     runInstruction() {
         console.debug('Scheduler.runInstruction()');
-        if (this.currentExecutionSpaceIndex >= this.executionSpace.GetExecutionSpaceCount()) {
+        if (this.currentExecutionSpaceIndex >= this.executionSpace.getExecutionSpaceCount()) {
             this.currentExecutionSpaceIndex = 0;
         }
-        if (this.executionSpace.GetExecutionSpaceCount() == 0) {
+        if (this.executionSpace.getExecutionSpaceCount() == 0) {
             return;
         }
-        let currentSpace = this.executionSpace.GetExecutionSpace(this.currentExecutionSpaceIndex);
+        let currentSpace = this.executionSpace.getExecutionSpace(this.currentExecutionSpaceIndex);
         if (!currentSpace.locked) {
             if (currentSpace.instructions.length == 0) {
                 this.destroyExecutionSpace(currentSpace);
@@ -26,8 +26,9 @@ class Scheduler {
             }
         }
         this.currentExecutionSpaceIndex++;
+        window.setTimeout(this.runInstruction.bind(this), 0);
     }
     destroyExecutionSpace(currentSpace) {
-        this.executionSpace.RemoveExecutionSpace(currentSpace);
+        this.executionSpace.removeExecutionSpace(currentSpace);
     }
 }

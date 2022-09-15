@@ -1,13 +1,13 @@
 class Interpreter {
     constructor(os, parser) {
-        this.OS = os;
-        this.Parser = parser;
+        this.os = os;
+        this.parser = parser;
         this.api = new Api(os);
     }
 
-    Interpret(statements) {
+    interpret(statements) {
         let result = [];
-        let space = this.OS.ExecutionSpace.CreateExecutionSpace();
+        let space = this.os.executionSpace.createExecutionSpace();
         space.locked = true;
         statements.forEach((s) => result = result.concat(this.getInstructionQueue(s, space)));
         space.instructions = result;
@@ -26,17 +26,17 @@ class Interpreter {
     }
     getEnsureVariable(name) {
         return {
-            execute: (executionSpace) => { executionSpace.Stack.EnsureVariable(name) }
+            execute: (executionSpace) => { executionSpace.stack.ensureVariable(name) }
         };
     }
     getAssignVariable(name, value) {
         return {
-            execute: (executionSpace) => { executionSpace.Stack.SetVariable(name, value) }
+            execute: (executionSpace) => { executionSpace.stack.setVariable(name, value) }
         };
     }
     getCopyVariable(sourcename, targetname) {
         return {
-            execute: (executionSpace) => { executionSpace.Stack.SetVariable(targetname, executionSpace.Stack.GetVariableValue(sourcename)) }
+            execute: (executionSpace) => { executionSpace.stack.setVariable(targetname, executionSpace.Stack.GetVariableValue(sourcename)) }
         }
     }
     getExecuteFunction(executionSpace, name, parameters) {
@@ -45,11 +45,11 @@ class Interpreter {
         let functionInstructions = executionSpace.instructions.filter(i => i.isdefinition && i.function === name);
         let parameterFunctions = [];
         if (functionInstructions.length == 0) {
-            if (this.api.IsApiCall(name)) {
+            if (this.api.isApiCall(name)) {
                 functionCalls.push({ execute: () => {
-                    this.OS.executeApiCall(executionSpace, name);
+                    this.os.executeApiCall(executionSpace, name);
                 }});
-                targetFunction = this.api.GetCall(name);
+                targetFunction = this.api.getCall(name);
                 parameterFunctions = this.queueParameterFunctions(targetFunction, parameters, executionSpace);
             } else {
                 return;
@@ -65,17 +65,16 @@ class Interpreter {
             }
             targetFunction = preferredFunctions[0];
             parameterFunctions = this.queueParameterFunctions(targetFunction, parameters, executionSpace);
-            // Resolve parameter values, including function calls before adding the stackframe
-            functionCalls.push(this.Parser.Parse(targetFunction.codeBlock));
+            functionCalls.push(this.parser.parse(targetFunction.codeBlock));
         }
         let enterStack = { 
             execute: () => { 
-                executionSpace.Stack.AddStackFrame();
+                executionSpace.stack.addStackFrame();
             } 
         };
         let exitStack = {
             execute: () => {
-                executionSpace.Stack.RemoveStackFrame();
+                executionSpace.stack.removeStackFrame();
             }
         };
         let instructions = parameterFunctions

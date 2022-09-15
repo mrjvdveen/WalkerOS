@@ -1,18 +1,23 @@
 class Console {
     constructor(os, parser, interpreter) {
-        this.OS = os;
-        this.OS.registerOutputAvailable(this.outputAvailable.bind(this));
+        this.os = os;
+        this.os.registerOutputAvailable(this.outputAvailable.bind(this));
+        this.os.registerReadInput(this.readInput.bind(this));
 
         this.outputCallback = null;
         this.getSelectionCallback = null;
+        this.setInhibitKeysCallback = null;
         this.inputBuffer = "";
 
-        this.Parser = parser;
-        this.Interpreter = interpreter;
+        this.parser = parser;
+        this.interpreter = interpreter;
         this.currentExecSpace = null;
         this.completed = true;
 
-        this.cursorPosition = null;
+        this.inputPosition = null;
+        this.readingInput = false;
+
+        this.inputMaskCharacter = null;
     }
     boot() {
         this.outputCursor();
@@ -20,15 +25,15 @@ class Console {
 
     // Output functions
     outputAvailable(event) {
-        let output = this.OS.readOutput();
+        let output = this.os.readOutput();
         while (output != null) {
             this.output(output);
-            output = this.OS.readOutput();
+            output = this.os.readOutput();
         }
     }
-    output(text) {
+    output(text, position) {
         if (this.outputCallback != null) {
-            this.outputCallback(text);
+            this.outputCallback(text, position);
         }
     }
     registerOutputCallback(callback) {
@@ -37,38 +42,66 @@ class Console {
     outputCursor() {
         console.debug('Console.outputCursor()');
         this.output("\n>");
-        this.cursorPosition = this.getSelectionCallback().start;
+        this.inputPosition = this.getSelectionCallback().start;
     }
     
     // Input functions
     isBackspaceValid() {
         let currentPosition = this.getSelectionCallback().start;
-        return this.inputBuffer.length > 0 && currentPosition > this.cursorPosition;
+        return this.inputBuffer.length > 0 && currentPosition > this.inputPosition;
     }
-    handleKey(event, selection) {
+    handleKey(event) {
         if (!this.completed) {
             event.preventDefault();
             return;
         }
         if (event.inputType === 'insertText') {
             this.appendInputBuffer(event.data);
+            if (this.readingInput && this.inputMaskCharacter) {
+                this.output(this.inputMaskCharacter);
+            }
         }
         if (event.inputType === 'insertLineBreak') {
-            if (this.inputBuffer.endsWith(';')) {
-                let statements = this.Parser.Parse(this.inputBuffer);
-                this.currentExecSpace = this.Interpreter.Interpret(statements);
+            if (this.readingInput) {
+                this.readingInput = false;
+            }
+            else if (this.inputBuffer.endsWith(';')) {
+                let statements = this.parser.parse(this.inputBuffer);
+                this.currentExecSpace = this.interpreter.interpret(statements);
                 this.clearInputBuffer();
                 this.waitForCompletion();
             }
         }
         if (event.inputType === 'deleteContentBackward') {
-            let bufferIndex = this.getSelectionCallback().start - this.cursorPosition;
+            let bufferIndex = this.getSelectionCallback().start - this.inputPosition;
             if (bufferIndex > 0) {
                 this.inputBuffer = this.inputBuffer.slice(0, bufferIndex - 1)
                     .concat(this.inputBuffer.slice(bufferIndex + 1))
             }
         }
         console.debug(`handleKey() inputBuffer: ${this.inputBuffer}`)
+    }
+    readInput(maskCharacter) {
+        console.debug(`readinput: maskCharacter = ${maskCharacter}`);
+        this.inputPosition = this.getSelectionCallback().start;
+        this.inputMaskCharacter = maskCharacter;
+        this.setInhibitKeysCallback(true, false);
+        this.readingInput = true;
+        return new Promise(resolve => {
+            waitForInput(this);
+            function waitForInput(target) {
+                if (target.readingInput) {
+                    setTimeout(waitForInput, 0, target);
+                }
+                else {
+                    let buffer = target.inputBuffer;
+                    target.clearInputBuffer();
+                    target.inputMaskCharacter = null;
+                    target.setInhibitKeysCallback(false);
+                    resolve(buffer);
+                }
+            }
+        });
     }
     appendInputBuffer(data) {
         this.inputBuffer = this.inputBuffer.concat(data);
@@ -87,5 +120,8 @@ class Console {
 
     registerGetSelectionCallback(callback) {
         this.getSelectionCallback = callback;
+    }
+    registerSetInhibitKeysCallback(callback) {
+        this.setInhibitKeysCallback = callback;
     }
 }

@@ -10,10 +10,10 @@ class Api {
             }
         ]
     }
-    GetCall(name) {
+    getCall(name) {
         return this.Calls.find(c => c.name === name);
     }
-    IsApiCall(name) {
+    isApiCall(name) {
         return this.Calls.some(c => c.name === name);
     }
 }

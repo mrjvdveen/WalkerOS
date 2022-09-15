@@ -2,19 +2,20 @@ const statementExpression = /(?:([^\{\}]*?)(?: ?= ?))?((.*?)(\((.*)?\)))?((?:.*?
 const literalExpression = /(^'.*?'$)|(^[\d\.]*$)/g;
 
 class Parser {
-    constructor() {
+    constructor(errorHandler) {
+        this.errorHandler = errorHandler;
     }
-    Parse(code) {
+    parse(code) {
         let statements = code.split(';');
         let result = [];
         statements.forEach(element => {
             if (element.trim() !== '') {
-                result.push(this.ParseStatement(element.trim()));
+                result.push(this.parseStatement(element.trim()));
             }
         });
         return result;
     }
-    ParseStatement(code) {
+    parseStatement(code) {
         let result = statementExpression.exec(code);
         if (!result) {
             this.handleSyntaxError(code);
@@ -40,7 +41,7 @@ class Parser {
         };
         if (parameters) {
             statement.function = inputSymbol;
-            parameters.forEach(p => statement.parameters.push(this.ParseParameter(p[p.length - 1] == ',' ? p.substring(0, p.length - 2) : p)));
+            parameters.forEach(p => statement.parameters.push(this.parseParameter(p[p.length - 1] == ',' ? p.substring(0, p.length - 2) : p)));
         } else {
             if (literalExpression.test(inputSymbol)) {
                 statement.literal = inputSymbol.replaceAll('\'', '');
@@ -50,7 +51,7 @@ class Parser {
         }
         return statement;
     }
-    ParseParameter(parameter) {
+    parseParameter(parameter) {
         let statement = { 
             literal: null,
             variable: null,
@@ -60,11 +61,11 @@ class Parser {
         } else if (!statementExpression.test(parameter)) {
             statement.variable = parameter;
         } else {
-            return this.ParseStatement(parameter);
+            return this.parseStatement(parameter);
         }
         return statement;
     }
     handleSyntaxError(code) {
-
+        this.errorHandler.error(`Syntax error in "${code}"`);
     }
 }
