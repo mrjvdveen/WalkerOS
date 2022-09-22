@@ -225,6 +225,27 @@ class Storage {
             cursor.update(existingFile);
         };
     }
+    async exportFiles() {
+        const options = {
+            types: [{
+                description: 'JSON file',
+                accept: {'text/json': ['.json']}
+            }]
+        };
+        let file = await window.showSaveFilePicker(options);
+        let transaction = this.getTransaction("readonly");
+        let collectionStore = transaction.objectStore(CollectionsStore);
+        let fileWriter = await file.createWritable();
+        collectionStore.openCursor().onsuccess = async function (event) {
+            let cursor = event.target.result;
+            if (cursor) {
+                let collection = cursor.value;
+                await fileWriter.write(JSON.stringify(collection));
+                cursor.continue();
+            }
+        };
+        await fileWriter.close();
+    }
 }
 
 class Collection {

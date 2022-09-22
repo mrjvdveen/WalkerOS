@@ -13,6 +13,7 @@ class Scheduler {
             this.currentExecutionSpaceIndex = 0;
         }
         if (this.executionSpace.getExecutionSpaceCount() == 0) {
+            window.setTimeout(this.runInstruction.bind(this), 0);
             return;
         }
         let currentSpace = this.executionSpace.getExecutionSpace(this.currentExecutionSpaceIndex);
