@@ -7,6 +7,20 @@ class Api {
                 execute: (params) => {
                     os.writeOutput(params[0]);
                 }
+            },
+            {
+                name: 'export',
+                parameters: [],
+                execute: () => {
+                    os.storage.exportFiles();
+                }
+            },
+            {
+                name: 'import',
+                parameters: [],
+                execute: () => {
+                    os.storage.importFiles();
+                }
             }
         ]
     }

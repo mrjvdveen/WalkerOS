@@ -226,6 +226,9 @@ class Storage {
         };
     }
     async exportFiles() {
+        let collections = this.getAllCollections();
+        let files = this.getAllFiles();
+
         const options = {
             types: [{
                 description: 'JSON file',
@@ -233,18 +236,78 @@ class Storage {
             }]
         };
         let file = await window.showSaveFilePicker(options);
-        let transaction = this.getTransaction("readonly");
-        let collectionStore = transaction.objectStore(CollectionsStore);
         let fileWriter = await file.createWritable();
-        collectionStore.openCursor().onsuccess = async function (event) {
+        await fileWriter.write('{"collections":[');
+        for (let index = 0; index < collections.length; index++) {
+            if (index > 0) {
+                await fileWriter.write(',');
+            }
+            await fileWriter.write(JSON.stringify(collections[index]));
+        }
+        await fileWriter.write('], "files":[');
+        for (let index = 0; index < files.length; index++) {
+            if (index > 0) {
+                await fileWriter.write(',');
+            }
+            await fileWriter.write(JSON.stringify(files[index]));
+        }
+        await fileWriter.write(']}');
+        await fileWriter.close();
+    }
+    getAllFiles() {
+        let fileTransaction = this.getTransaction("readonly");
+        let fileStore = fileTransaction.objectStore(FilesStore);
+        let files = [];
+        fileStore.openCursor().onsuccess = function (event) {
             let cursor = event.target.result;
             if (cursor) {
-                let collection = cursor.value;
-                await fileWriter.write(JSON.stringify(collection));
+                let fileValue = cursor.value;
+                files.push(fileValue);
                 cursor.continue();
             }
         };
-        await fileWriter.close();
+        return files;
+    }
+    getAllCollections() {
+        let collectionTransaction = this.getTransaction("readonly");
+        let collectionStore = collectionTransaction.objectStore(CollectionsStore);
+        let collections = [];
+        collectionStore.openCursor().onsuccess = function (event) {
+            let cursor = event.target.result;
+            if (cursor) {
+                let collection = cursor.value;
+                collections.push(collection);
+                cursor.continue();
+            }
+        };
+        return collections;
+    }
+    async importFiles() {
+        const options = {
+             multiple: false,
+             excludeAcceptAllOption: true,
+             types: [{
+                description: 'JSON file',
+                accept: {'text/json': ['.json']}
+            }]
+        };
+        let fileHandle;
+        [fileHandle] = await window.showOpenFilePicker(options);
+        let file = await fileHandle.getFile();
+        let importData = await file.text();
+        let importObject = JSON.parse(importData);
+        let collectionTransaction = this.getTransaction("readwrite");
+        let collectionStore = collectionTransaction.objectStore(CollectionsStore);
+        for (let index = 0; index < importObject.collections.length; index++) {
+            let collection = importObject.collections[index];
+            collectionStore.put(collection);
+        }
+        let fileTransaction = this.getTransaction("readwrite");
+        let fileStore = fileTransaction.objectStore(FilesStore);
+        for (let index = 0; index < importObject.files.length; index++) {
+            let file = importObject.files[index];
+            fileStore.put(file);
+        }
     }
 }
 

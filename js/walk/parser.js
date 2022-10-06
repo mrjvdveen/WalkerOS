@@ -28,6 +28,8 @@ class Parser {
         let parameters = null;
         if (result[5]) {
             parameters = result[5].match(parameterSplitExpressionRegex);
+        } else if (result[4]) {
+            parameters = [];
         }
         let functionBlock = result[6];
         let statement = { 
