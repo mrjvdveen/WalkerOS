@@ -7,13 +7,27 @@ class Api {
                 execute: (params) => {
                     os.writeOutput(params[0]);
                 }
+            },
+            {
+                name: 'export',
+                parameters: [],
+                execute: () => {
+                    os.storage.exportFiles();
+                }
+            },
+            {
+                name: 'import',
+                parameters: [],
+                execute: () => {
+                    os.storage.importFiles();
+                }
             }
         ]
     }
-    GetCall(name) {
+    getCall(name) {
         return this.Calls.find(c => c.name === name);
     }
-    IsApiCall(name) {
+    isApiCall(name) {
         return this.Calls.some(c => c.name === name);
     }
 }

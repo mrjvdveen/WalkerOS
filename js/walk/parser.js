@@ -1,31 +1,35 @@
-const statementExpression = /(?:([^\{\}]*?)(?: ?= ?))?((.*?)(\((.*)?\)))?((?:.*?)\{.*\})?/gs;
-const literalExpression = /(^'.*?'$)|(^[\d\.]*$)/g;
+const statementExpression = '(?:([^\\{\\}]*?)(?: ?= ?))?((.*?)(\\((.*)?\\)))?((?:.*?)\\{.*\\})?';
+const literalExpression = '(^\'.*?\'$)|(^[\\d\\.]*$)';
 
 class Parser {
-    constructor() {
+    constructor(errorHandler) {
+        this.errorHandler = errorHandler;
     }
-    Parse(code) {
+    parse(code) {
         let statements = code.split(';');
         let result = [];
         statements.forEach(element => {
             if (element.trim() !== '') {
-                result.push(this.ParseStatement(element.trim()));
+                result.push(this.parseStatement(element.trim()));
             }
         });
         return result;
     }
-    ParseStatement(code) {
-        let result = statementExpression.exec(code);
+    parseStatement(code) {
+        let statementExpressionRegex = new RegExp(statementExpression, 'g');
+        let result = statementExpressionRegex.exec(code);
         if (!result) {
             this.handleSyntaxError(code);
             return;
         }
         let assignedVariable = result[1];
         let inputSymbol = result[3];
-        const parameterSplitExpression = /(('.*?')|([\d\.]+)|(\w+\(.*\))),?/g;
+        let parameterSplitExpressionRegex = new RegExp('((\'.*?\')|([\\d\\.]+)|(\\w+\\(.*\\))),?','g');
         let parameters = null;
         if (result[5]) {
-            parameters = result[5].match(parameterSplitExpression);
+            parameters = result[5].match(parameterSplitExpressionRegex);
+        } else if (result[4]) {
+            parameters = [];
         }
         let functionBlock = result[6];
         let statement = { 
@@ -40,9 +44,10 @@ class Parser {
         };
         if (parameters) {
             statement.function = inputSymbol;
-            parameters.forEach(p => statement.parameters.push(this.ParseParameter(p[p.length - 1] == ',' ? p.substring(0, p.length - 2) : p)));
+            parameters.forEach(p => statement.parameters.push(this.parseParameter(p[p.length - 1] == ',' ? p.substring(0, p.length - 2) : p)));
         } else {
-            if (literalExpression.test(inputSymbol)) {
+            let literalExpressionRegex = new RegExp(literalExpression, 'g');
+            if (literalExpressionRegex.test(inputSymbol)) {
                 statement.literal = inputSymbol.replaceAll('\'', '');
             } else {
                 statement.variable = inputSymbol;
@@ -50,21 +55,23 @@ class Parser {
         }
         return statement;
     }
-    ParseParameter(parameter) {
+    parseParameter(parameter) {
         let statement = { 
             literal: null,
             variable: null,
         };
-        if (literalExpression.test(parameter)) {
+        let statementExpressionRegex = new RegExp(statementExpression, 'g');
+        let literalExpressionRegex = new RegExp(literalExpression, 'g');
+        if (literalExpressionRegex.test(parameter)) {
             statement.literal = parameter.replaceAll('\'', '');
-        } else if (!statementExpression.test(parameter)) {
+        } else if (!statementExpressionRegex.test(parameter)) {
             statement.variable = parameter;
         } else {
-            return this.ParseStatement(parameter);
+            return this.parseStatement(parameter);
         }
         return statement;
     }
     handleSyntaxError(code) {
-
+        this.errorHandler.error(`Syntax error in "${code}"`);
     }
 }

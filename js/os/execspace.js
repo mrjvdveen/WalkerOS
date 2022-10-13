@@ -6,24 +6,25 @@ class ExecutionSpace {
     boot() {
 
     }
-    CreateExecutionSpace() {
+    createExecutionSpace() {
         let space = {
             instructions: [],
-            Stack: new Stack(),
-            locked: false
+            stack: new Stack(),
+            locked: false,
+            user: null
         };
-        space.Stack.boot();
+        space.stack.boot();
         this.spaces.push(space);
         return space;
     }
-    RemoveExecutionSpace(space) {
+    removeExecutionSpace(space) {
         let index = this.spaces.indexOf(space);
         this.spaces.splice(index, 1);
     }
-    GetExecutionSpace(index) {
+    getExecutionSpace(index) {
         return this.spaces[index];
     }
-    GetExecutionSpaceCount() {
+    getExecutionSpaceCount() {
         return this.spaces.length;
     }
 }
