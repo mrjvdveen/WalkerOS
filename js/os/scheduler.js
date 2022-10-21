@@ -19,7 +19,9 @@ class Scheduler {
         let currentSpace = this.executionSpace.getExecutionSpace(this.currentExecutionSpaceIndex);
         if (!currentSpace.locked) {
             if (currentSpace.instructions.length == 0) {
-                this.destroyExecutionSpace(currentSpace);
+                if (currentSpace.parentSpace !== undefined && currentSpace.parentSpace !== null) {
+                    this.destroyExecutionSpace(currentSpace);
+                }
             }
             else {
                 let currentInstruction = currentSpace.instructions.shift(0, 1);

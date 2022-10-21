@@ -27,11 +27,15 @@ class Stack {
         this.currentStackFrame.variables.find(v => v.Name === name).Value = value;
     }
     getVariableValue(name) {
-        if (name[0] === '_')
+        let variable = null;
+        if (name[0] === '_' && this.stackFrames.length > 1)
         {
-            return this.stackFrames.at(-2).variables.find(v => v.Name === name).Value;
+            variable = this.stackFrames.at(-2).variables.find(v => v.Name === name);
         }
-        return this.currentStackFrame.variables.find(v => v.Name === name).Value;
+        if (name[0] !== '_' || variable === null) {
+            variable = this.currentStackFrame.variables.find(v => v.Name === name);
+        }
+        return variable.Value;
     }
 }
 

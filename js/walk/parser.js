@@ -1,4 +1,7 @@
-const statementExpression = '(?:([^\\{\\}]*?)(?: ?= ?))?((.*?)(\\((.*)?\\)))?((?:.*?)\\{.*\\})?';
+const faseOneStatementExpression = '(?:([^\\{\\}]*?)(?: ?= ?))?(.*)?';
+const faseTwoStatementExpression = '((.*?)(\\((.*?)?\\)))((?:.*?)\\{.*\\})?';
+const variableNameExpression = '^[^_]\\w+';
+const statementExpression = '(?:([^\\{\\}]*?)(?: ?= ?))?((.*?)(\\((.*)?\\))?)?((?:.*?)\\{.*\\})?';
 const literalExpression = '(^\'.*?\'$)|(^[\\d\\.]*$)';
 
 class Parser {
@@ -16,43 +19,54 @@ class Parser {
         return result;
     }
     parseStatement(code) {
-        let statementExpressionRegex = new RegExp(statementExpression, 'g');
-        let result = statementExpressionRegex.exec(code);
-        if (!result) {
-            this.handleSyntaxError(code);
-            return;
-        }
-        let assignedVariable = result[1];
-        let inputSymbol = result[3];
-        let parameterSplitExpressionRegex = new RegExp('((\'.*?\')|([\\d\\.]+)|(\\w+\\(.*\\))),?','g');
-        let parameters = null;
-        if (result[5]) {
-            parameters = result[5].match(parameterSplitExpressionRegex);
-        } else if (result[4]) {
-            parameters = [];
-        }
-        let functionBlock = result[6];
         let statement = { 
-            isassign: assignedVariable !== null && assignedVariable !== undefined,
-            outputtarget: assignedVariable,
-            isdefinition: functionBlock !== null && functionBlock !== undefined,
+            isassign: false,
+            outputtarget: null,
+            isdefinition: false,
             function: null,
             literal: null,
             variable: null,
             parameters: [],
-            blockCode: functionBlock
+            blockCode: null
         };
-        if (parameters) {
-            statement.function = inputSymbol;
-            parameters.forEach(p => statement.parameters.push(this.parseParameter(p[p.length - 1] == ',' ? p.substring(0, p.length - 2) : p)));
+        let faseOneStatementExpressionRegex = new RegExp(faseOneStatementExpression, 'g');
+        let faseOneResult = faseOneStatementExpressionRegex.exec(code);
+        if (!faseOneResult) {
+            this.handleSyntaxError(code);
+            return;
+        }
+        statement.isassign = faseOneResult[1] !== null && faseOneResult[1] !== undefined;
+        if (statement.isassign) {
+            statement.outputtarget = faseOneResult[1];
+        }
+        let rightSideCode = faseOneResult[2];
+        let literalExpressionRegex = new RegExp(literalExpression);
+        if (literalExpressionRegex.test(rightSideCode)) {
+            statement.literal = rightSideCode.replaceAll('\'', '');
         } else {
-            let literalExpressionRegex = new RegExp(literalExpression, 'g');
-            if (literalExpressionRegex.test(inputSymbol)) {
-                statement.literal = inputSymbol.replaceAll('\'', '');
-            } else {
-                statement.variable = inputSymbol;
+            let faseTwoStatementExpressionRegex = new RegExp(faseTwoStatementExpression, 'g');
+            let faseTwoResult = faseTwoStatementExpressionRegex.exec(rightSideCode);
+            if (!faseTwoResult) {
+                let variableNameExpressionRegex = new RegExp(variableNameExpression, 'g');
+                if (variableNameExpressionRegex.test(rightSideCode)) {
+                    statement.variable = rightSideCode;
+                }
+                else {
+                    this.handleSyntaxError(code);
+                    return;
+                }
+            }
+            statement.function = faseTwoResult[2];
+            if (faseTwoResult[4]) {
+                let parameterSplitExpressionRegex = new RegExp('((\'.*?\')|(\\w+\\(.*\\))|([\\w\\.]+)),?','g');
+                let parameters = Array.from(faseTwoResult[4].matchAll(parameterSplitExpressionRegex), (m) => m[0]);
+                if (parameters) {
+                    parameters.forEach(p => statement.parameters.push(this.parseParameter(p[p.length - 1] == ',' ? p.substring(0, p.length - 2) : p)));
+                }
+                statement.functionBlock = faseTwoResult[5];
             }
         }
+
         return statement;
     }
     parseParameter(parameter) {
@@ -60,11 +74,11 @@ class Parser {
             literal: null,
             variable: null,
         };
-        let statementExpressionRegex = new RegExp(statementExpression, 'g');
+        let variableNameExpressionRegex = new RegExp(variableNameExpression, 'g');
         let literalExpressionRegex = new RegExp(literalExpression, 'g');
         if (literalExpressionRegex.test(parameter)) {
             statement.literal = parameter.replaceAll('\'', '');
-        } else if (!statementExpressionRegex.test(parameter)) {
+        } else if (variableNameExpressionRegex.test(parameter)) {
             statement.variable = parameter;
         } else {
             return this.parseStatement(parameter);

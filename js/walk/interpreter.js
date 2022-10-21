@@ -5,19 +5,21 @@ class Interpreter {
         this.api = new Api(os);
     }
 
-    interpret(statements) {
+    interpret(statements, executionSpace) {
         let result = [];
-        let space = this.os.executionSpace.createExecutionSpace();
+        let space = executionSpace;
         space.locked = true;
         statements.forEach((s) => result = result.concat(this.getInstructionQueue(s, space)));
         space.instructions = result;
         space.locked = false;
-        return space;
     }
     getInstructionQueue(statement, executionSpace) {
         let instructions = [];
         if (statement.isassign) {
             instructions.push(this.getEnsureVariable(statement.outputtarget));
+            if (statement.literal) {
+                instructions.push(this.getAssignVariable(statement.outputtarget, statement.literal));
+            }
         }
         if (statement.function) {
             instructions = instructions.concat(this.getExecuteFunction(executionSpace, statement.function, statement.parameters));
@@ -36,7 +38,7 @@ class Interpreter {
     }
     getCopyVariable(sourcename, targetname) {
         return {
-            execute: (executionSpace) => { executionSpace.stack.setVariable(targetname, executionSpace.Stack.GetVariableValue(sourcename)) }
+            execute: (executionSpace) => { executionSpace.stack.setVariable(targetname, executionSpace.stack.getVariableValue(sourcename)) }
         }
     }
     getExecuteFunction(executionSpace, name, parameters) {
@@ -106,7 +108,7 @@ class Interpreter {
             }
             if (parameter.variable) {
                 parameterFunctions.push(this.getEnsureVariable(variableName));
-                parameterFunctions.push(this.getCopyVariable(variableName, parameter.variable));
+                parameterFunctions.push(this.getCopyVariable(parameter.variable, variableName));
             }
         }
         return parameterFunctions;
