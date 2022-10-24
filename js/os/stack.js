@@ -14,6 +14,7 @@ class Stack {
     }
     removeStackFrame() {
         this.stackFrames.pop();
+        this.currentStackFrame = this.stackFrames[this.stackFrames.length - 1];
     }
     ensureVariable(name) {
         if (this.currentStackFrame.variables.filter(v => v.Name === name).length == 0) {
