@@ -21,10 +21,18 @@ class Interpreter {
                 instructions.push(this.getAssignVariable(statement.outputtarget, statement.literal));
             }
         }
-        if (statement.function) {
+        if (statement.function && !statement.isdefinition) {
             instructions = instructions.concat(this.getExecuteFunction(executionSpace, statement.function, statement.parameters));
         }
+        if (statement.function && statement.isdefinition) {
+            instructions = instructions.concat(this.getFunctionDefinition(statement));
+        }
         return instructions;
+    }
+    getFunctionDefinition(statement) {
+        return {
+            execute: (executionSpace) => { executionSpace.heap.addFunction(statement.function, statement.parameters, statement.blockCode) }
+        };
     }
     getEnsureVariable(name) {
         return {
@@ -54,7 +62,14 @@ class Interpreter {
                 targetFunction = this.api.getCall(name);
                 parameterFunctions = this.queueParameterFunctions(targetFunction, parameters, executionSpace);
             } else {
-                return;
+                targetFunction = executionSpace.heap.getFunction(name, parameters);
+                if (targetFunction) {
+                    parameterFunctions = this.queueParameterFunctions(targetFunction, parameters, executionSpace);
+                    targetFunction.instructions.forEach((s) => functionCalls = functionCalls.concat(this.getInstructionQueue(s, executionSpace)));
+                } else {
+                    // Handle error for unknown function
+                    return;
+                }
             }
         }
         if (functionInstructions.length > 1) {
@@ -70,8 +85,17 @@ class Interpreter {
             functionCalls.push(this.parser.parse(targetFunction.codeBlock));
         }
         let enterStack = { 
-            execute: () => { 
+            execute: (executionSpace) => { 
                 executionSpace.stack.addStackFrame();
+                if (targetFunction && targetFunction.parameters) {
+                    targetFunction.parameters.forEach((p, i) => { 
+                        if (p.variable) {
+                            executionSpace.stack.ensureVariable(p.variable);
+                            executionSpace.stack.setVariable(p.variable, 
+                                executionSpace.stack.getVariableValue(this.getParameterReservedVariableName(targetFunction.name, i)));
+                        }
+                    });
+                }
             } 
         };
         let exitStack = {
@@ -85,11 +109,14 @@ class Interpreter {
             .concat([ exitStack ]);
         return instructions;
     }
+    getParameterReservedVariableName(functionName, parameterIndex) {
+        return `_${functionName}_${parameterIndex}`;
+    }
     queueParameterFunctions(targetFunction, parameters, executionSpace) {
         let parameterFunctions = [];
         for (var index = 0; index < targetFunction.parameters.length; index++) {
             let parameter = parameters[index];
-            let variableName = `_${targetFunction.name ?? targetFunction.function}_${index}`;
+            let variableName = this.getParameterReservedVariableName(targetFunction.name ?? targetFunction.function, index);
             if (!parameter.isdefinition && parameter.function) {
                 let executeFunction = this.getExecuteFunction(executionSpace, parameter.function, parameter.parameters);
 

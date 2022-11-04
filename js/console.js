@@ -67,7 +67,7 @@ class Console {
             if (this.readingInput) {
                 this.readingInput = false;
             }
-            else if (this.inputBuffer.endsWith(';')) {
+            else if (this.inputBuffer.endsWith(';') || this.inputBuffer.endsWith('}')) {
                 let statements = this.parser.parse(this.inputBuffer);
                 this.interpreter.interpret(statements, this.currentExecSpace);
                 this.clearInputBuffer();

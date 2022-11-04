@@ -10,6 +10,7 @@ class ExecutionSpace {
         let space = {
             instructions: [],
             stack: new Stack(),
+            heap: new Heap(),
             locked: false,
             user: user,
             parentSpace: parentSpace

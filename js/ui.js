@@ -18,6 +18,7 @@ class UI {
         document.body.appendChild(root);
         root.appendChild(consoleArea);
         consoleArea.addEventListener('beforeinput', this.handleInputEvent.bind(this));
+        consoleArea.addEventListener('paste', this.handlePasteEvent.bind(this));
     }
     outputCallback(output, position) {
         if (this.consoleArea != null) {
@@ -52,6 +53,12 @@ class UI {
                 event.cancelBubble = true;
                 event.preventDefault();
             }
+        }
+    }
+    handlePasteEvent(event) {
+        if (this.console.selectionStart === this.console.selectionEnd) {
+            let content = event.clipboardData.getData('text/plain');
+            this.console.appendInputBuffer(content);
         }
     }
 }

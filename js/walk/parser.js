@@ -9,16 +9,37 @@ class Parser {
         this.errorHandler = errorHandler;
     }
     parse(code) {
-        let statements = code.split(';');
         let result = [];
-        statements.forEach(element => {
-            if (element.trim() !== '') {
-                result.push(this.parseStatement(element.trim()));
+        if (code.indexOf("{") > 0) {
+            let preBlock = code.substring(0, code.indexOf("{") - 1);
+            let openCount = 1;
+            let postBlockStart = -1;
+            for (var index = code.indexOf("{") + 1; index < code.length; index++) {
+                if (code[index] === "{") {
+                    openCount++;
+                }
+                if (code[index] === "}") {
+                    openCount--;
+                }
+                if (openCount === 0) {
+                    postBlockStart = index + 1;
+                    break;
+                }
             }
-        });
+            let postBlock = code.substring(postBlockStart);
+            result.push(this.parseStatement(code.substring(code.indexOf("{") + 1, postBlockStart - 1), preBlock, postBlock));
+        }
+        else {
+            let statements = code.split(';');
+            statements.forEach(element => {
+                if (element.trim() !== '') {
+                    result.push(this.parseStatement(element.trim()));
+                }
+            });
+        }
         return result;
     }
-    parseStatement(code) {
+    parseStatement(code, preBlock, postBlock) {
         let statement = { 
             isassign: false,
             outputtarget: null,
@@ -29,10 +50,16 @@ class Parser {
             parameters: [],
             blockCode: null
         };
+        let fase1Code = code;
+        if (preBlock || postBlock) {
+            statement.isdefinition = true;
+            statement.blockCode = this.parse(code);
+            fase1Code = preBlock;
+        }
         let faseOneStatementExpressionRegex = new RegExp(faseOneStatementExpression, 'g');
-        let faseOneResult = faseOneStatementExpressionRegex.exec(code);
+        let faseOneResult = faseOneStatementExpressionRegex.exec(fase1Code);
         if (!faseOneResult) {
-            this.handleSyntaxError(code);
+            this.handleSyntaxError(fase1Code);
             return;
         }
         statement.isassign = faseOneResult[1] !== null && faseOneResult[1] !== undefined;
@@ -52,7 +79,7 @@ class Parser {
                     statement.variable = rightSideCode;
                 }
                 else {
-                    this.handleSyntaxError(code);
+                    this.handleSyntaxError(fase1Code);
                     return;
                 }
             }
