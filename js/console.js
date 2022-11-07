@@ -20,6 +20,8 @@ class Console {
         this.inputMaskCharacter = null;
     }
     boot() {
+        // TODO: pass the current user to createExecutionSpace
+        this.currentExecSpace = this.os.executionSpace.createExecutionSpace();
         this.outputCursor();
     }
 
@@ -65,9 +67,9 @@ class Console {
             if (this.readingInput) {
                 this.readingInput = false;
             }
-            else if (this.inputBuffer.endsWith(';')) {
+            else if (this.inputBuffer.endsWith(';') || this.inputBuffer.endsWith('}')) {
                 let statements = this.parser.parse(this.inputBuffer);
-                this.currentExecSpace = this.interpreter.interpret(statements);
+                this.interpreter.interpret(statements, this.currentExecSpace);
                 this.clearInputBuffer();
                 this.waitForCompletion();
             }

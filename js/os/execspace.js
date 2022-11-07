@@ -6,12 +6,14 @@ class ExecutionSpace {
     boot() {
 
     }
-    createExecutionSpace() {
+    createExecutionSpace(user, parentSpace) {
         let space = {
             instructions: [],
             stack: new Stack(),
+            heap: new Heap(),
             locked: false,
-            user: null
+            user: user,
+            parentSpace: parentSpace
         };
         space.stack.boot();
         this.spaces.push(space);
