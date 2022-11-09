@@ -19,9 +19,12 @@ class Console {
 
         this.inputMaskCharacter = null;
     }
-    boot() {
-        // TODO: pass the current user to createExecutionSpace
-        this.currentExecSpace = this.os.executionSpace.createExecutionSpace();
+    async boot() {
+        let currentUser = null;
+        do {
+            currentUser = await this.os.security.login();
+        } while (!currentUser);
+        this.currentExecSpace = this.os.executionSpace.createExecutionSpace(currentUser);
         this.outputCursor();
     }
 
@@ -59,8 +62,12 @@ class Console {
         }
         if (event.inputType === 'insertText') {
             this.appendInputBuffer(event.data);
-            if (this.readingInput && this.inputMaskCharacter) {
-                this.output(this.inputMaskCharacter);
+            if (this.readingInput) {
+                if (this.inputMaskCharacter) {
+                    this.output(this.inputMaskCharacter);
+                } else {
+                    this.output(event.data);
+                }
             }
         }
         if (event.inputType === 'insertLineBreak') {

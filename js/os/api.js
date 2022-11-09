@@ -4,7 +4,7 @@ class Api {
             {
                 name: 'write',
                 parameters: [ 'text' ],
-                execute: (params) => {
+                execute: (executionSpace, params) => {
                     os.writeOutput(params[0]);
                 }
             },
@@ -20,6 +20,13 @@ class Api {
                 parameters: [],
                 execute: () => {
                     os.storage.importFiles();
+                }
+            },
+            {
+                name: 'getuser',
+                parameters: [],
+                execute: (executionSpace) => {
+                    executionSpace.stack.setVariable('getuser', executionSpace.user.name);
                 }
             }
         ]

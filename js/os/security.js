@@ -52,6 +52,25 @@ class Security {
         }
         return password;
     }
+    async login() {
+        let user = null;
+        let password = '';
+        do
+        {
+            let username = '';
+            do
+            {
+                this.os.writeOutput("\r\nUsername: ");
+                username = await this.os.readInput();
+            } while (username == '');
+            this.os.writeOutput("\r\nPassword: ");
+            password = await this.os.readInput('*');
+            let file = await this.os.storage.getFile("/walker/sys/accounts");
+            let users = JSON.parse(file.content);
+            user = users.find(u => u.name.toUpperCase() === username.toUpperCase());
+        } while (!user || user.password !== password);
+        return user;
+    }
     encrypt(data) {
         return data;
     }
