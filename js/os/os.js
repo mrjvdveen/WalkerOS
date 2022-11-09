@@ -61,7 +61,7 @@ class OS {
         for (var index = 0; index < apiCall.parameters.length; index++) {
             parameters.push(executionSpace.stack.getVariableValue(`_${name}_${index}`));
         }
-        apiCall.execute(parameters);
+        apiCall.execute(executionSpace, parameters);
     }
     async wait(time) {
         return new Promise((resolve) => {

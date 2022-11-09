@@ -87,6 +87,7 @@ class Interpreter {
         let enterStack = { 
             execute: (executionSpace) => { 
                 executionSpace.stack.addStackFrame();
+                executionSpace.stack.ensureVariable(name);
                 if (targetFunction && targetFunction.parameters) {
                     targetFunction.parameters.forEach((p, i) => { 
                         if (p.variable) {
@@ -99,8 +100,11 @@ class Interpreter {
             } 
         };
         let exitStack = {
-            execute: () => {
+            execute: (executionSpace) => {
+                let returnValue = executionSpace.stack.getVariableValue(name);
                 executionSpace.stack.removeStackFrame();
+                executionSpace.stack.ensureVariable(this.getResultReservedVariableName(name));
+                executionSpace.stack.setVariable(this.getResultReservedVariableName(name), returnValue);
             }
         };
         let instructions = parameterFunctions
@@ -112,6 +116,9 @@ class Interpreter {
     getParameterReservedVariableName(functionName, parameterIndex) {
         return `_${functionName}_${parameterIndex}`;
     }
+    getResultReservedVariableName(functionName) {
+        return `_${functionName}_result`;
+    }
     queueParameterFunctions(targetFunction, parameters, executionSpace) {
         let parameterFunctions = [];
         for (var index = 0; index < targetFunction.parameters.length; index++) {
@@ -120,14 +127,13 @@ class Interpreter {
             if (!parameter.isdefinition && parameter.function) {
                 let executeFunction = this.getExecuteFunction(executionSpace, parameter.function, parameter.parameters);
 
-                parameter.function = null;
+                // parameter.function = null;
                 parameter.parameters = null;
                 parameter.variable = variableName; 
 
                 parameterFunctions.push(this.getEnsureVariable(variableName));
-                parameterFunctions.push(executeFunction);
-                // This is incorrect! Should be the result from the stack
-                parameterFunctions.push(this.getAssignVariable(variableName, targetFunction !== null ?? targetFunction.Result));
+                parameterFunctions = parameterFunctions.concat(executeFunction);
+                parameterFunctions.push(this.getCopyVariable(this.getResultReservedVariableName(parameter.function), variableName));
             }
             if (parameter.literal) {
                 parameterFunctions.push(this.getEnsureVariable(variableName));

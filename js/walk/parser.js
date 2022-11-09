@@ -1,6 +1,6 @@
 const faseOneStatementExpression = '(?:([^\\{\\}]*?)(?: ?= ?))?(.*)?';
-const faseTwoStatementExpression = '((.*?)(\\((.*?)?\\)))((?:.*?)\\{.*\\})?';
-const variableNameExpression = '^[^_]\\w+';
+const faseTwoStatementExpression = '((.*?)(\\((.*)?\\)))((?:.*?)\\{.*\\})?';
+const variableNameExpression = '^[^_]\\w+$';
 const statementExpression = '(?:([^\\{\\}]*?)(?: ?= ?))?((.*?)(\\((.*)?\\))?)?((?:.*?)\\{.*\\})?';
 const literalExpression = '(^\'.*?\'$)|(^[\\d\\.]*$)';
 
